@@ -1,21 +1,66 @@
-const express = require('express');
+const express = require("express");
+const axios = require("axios");
 const app = express();
-const PORT = process.env.PORT || 8080;
+app.use(express.json());
 
-// Webhook verification
-app.get('/', (req, res) => {
-  const verify_token = "spicyfood123";
+// ✅ Replace with your values:
+const VERIFY_TOKEN = "spicyfood123";
+const ACCESS_TOKEN = "EAARuonEIWFMBPP3MuKyOr18nh9JVt1R5ZB7h2P9jtZALYCf3hTDWZCE7eGZAC56tlxHACO5ZCqgkNJU3oUrIv6NHCxP2oonQDycSrMmjw0tEbxBzmeOMf16dWQC2NMhDQZA6p9vpI1uvOjH3D8W0qZBxTPivkWiiQaNPKy2JbCGozejAD9E5XcnFsQPwHVffRmLpTZCydYWSssSapoSnAuwo6zi6mDBr9Rh1MAPUlwmA2t3eMAZDZD";
+const PHONE_NUMBER_ID = "712877165243022";
 
+// 📩 GET route for webhook verification
+app.get("/", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === verify_token) {
-    console.log("WEBHOOK_VERIFIED");
+  if (mode && token && mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("✅ WEBHOOK VERIFIED");
     res.status(200).send(challenge);
   } else {
     res.sendStatus(403);
   }
 });
 
-app.listen(PORT, () => console.log(`Webhook server is running on port ${PORT}`));
+// 📥 POST route to receive messages
+app.post("/", async (req, res) => {
+  const body = req.body;
+  console.log("📨 Incoming webhook message:", JSON.stringify(body, null, 2));
+
+  if (body.object) {
+    const entry = body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const message = changes?.value?.messages?.[0];
+
+    if (message) {
+      const from = message.from;
+      const text = message.text?.body;
+
+      // 💬 Reply
+      await axios.post(
+        `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
+        {
+          messaging_product: "whatsapp",
+          to: from,
+          text: { body: `You said: ${text}` },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+// 🔥 Start the server
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is listening on port ${PORT}`);
+});
