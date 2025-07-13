@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -18,7 +18,7 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', (req, res) => {
-  console.log('📨 Incoming message from WhatsApp:', JSON.stringify(req.body, null, 2));
+  console.log('📩 Incoming message from WhatsApp:', JSON.stringify(req.body, null, 2));
   res.sendStatus(200);
 });
 
